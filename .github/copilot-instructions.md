@@ -1,39 +1,250 @@
- # AI Agent Instructions
+  # AI Agent Instructions
 
 ## Project Overview
 
-This repository contains a Computer Use Agent (CUA) implementation that enables automated computer interactions through browser or VM environments. The proje### Developer Guide
+This repository contains a Computer Use Agent (CUA) implementation that enables automated computer interactions through browser or VM environments. The proje### Development & Deployment Guide
 
-1. Adding New Tools
-   - Define interface in `domain/external`
-   - Implement in infrastructure layer
-   - Integrate in `application/services`
-   - Add API routes in `interfaces/api`
+### 1. Environment Configuration
 
-2. Debugging
-   - Browser: Chrome DevTools at `localhost:9222`
-   - VNC: Connect to `localhost:5900`
-   - API: Use SSE for real-time monitoring
-   - Logs: Check supervisor and service logs
+1. Environment Configuration
 
-3. Environment Requirements
-   - Python 3.9+
-   - Docker 20.10+
-   - MongoDB 4.4+
-   - Redis 6.0+
-   - Node.js 20.18.0
+   ```bash
+   # Frontend (.env)
+   VITE_API_URL=http://localhost:8000  # Backend API address
+   VITE_SANDBOX_URL=http://localhost:8001  # Sandbox service URL
 
-4. Error Handling
-   - Use unified response format
-   - Handle common error codes (400, 404, 500)
-   - Implement proper validation
-   - Add error monitoring
+   # Backend (.env)
+   MONGODB_URI=mongodb://localhost:27017/ai-agent  # Database URL
+   REDIS_URL=redis://localhost:6379  # Cache and pubsub
+   OPENAI_API_KEY=your_key_here  # AI service auth
+   SANDBOX_URL=http://localhost:8001  # Sandbox service
+   PORT=8000  # API port
+   NODE_ENV=development  # Environment name
+   LOG_LEVEL=debug  # Logging verbosity
 
-5. Testing
-   - Run in headless mode for CI
-   - Use safety check suite
-   - Test SSE streams
-   - Validate sandbox isolation on secure, sandboxed automation of UI interactions with robust safety controls.
+   # Sandbox (.env)
+   CHROME_PORT=9222  # DevTools debugging
+   VNC_PORT=5900  # Remote access
+   MAX_PROCESSES=10  # Process limit
+   TIMEOUT_MINUTES=60  # Session timeout
+   DOCKER_HOST=unix:///var/run/docker.sock  # Docker socket
+   SANDBOX_ROOT=/sandbox  # Container root
+   ```
+
+   ```bash
+   # Production overrides
+   NODE_ENV=production
+   LOG_LEVEL=info
+   MONGODB_URI=${RAILWAY_MONGO_URL}
+   REDIS_URL=${RAILWAY_REDIS_URL}
+   ```
+
+2. Production (Railway)
+   ```bash
+   # Deploy with Railway CLI
+   railway up --service frontend
+   railway up --service backend
+   railway up --service sandbox
+   ```
+
+### 2. Inter-Service Communication
+
+1. Service Architecture
+   ```
+   Frontend <-> Backend <-> Sandbox
+       |         |          |
+       |         v          v
+       +---> MongoDB    Docker API
+             Redis
+   ```
+
+2. Communication Patterns
+   - Frontend → Backend: REST API + SSE
+   - Backend → Sandbox: REST API
+   - Sandbox → Container: Docker API
+   - Real-time Updates: Redis pubsub
+
+### 3. Common Issues & Solutions
+
+1. Connection Issues
+   ```
+   Issue: Backend can't connect to MongoDB/Redis
+   Fix: Check MONGODB_URI and REDIS_URL in .env
+   ```
+
+   ```
+   Issue: Sandbox container not starting
+   Fix: Check Docker daemon and port conflicts
+   ```
+
+   ```
+   Issue: VNC connection refused
+   Fix: Verify ports 5900/9222 not in use
+   ```
+
+2. Performance Issues
+   ```
+   Issue: Slow API responses
+   Fix: Enable Redis caching, check MongoDB indexes
+   ```
+
+   ```
+   Issue: High memory usage in sandbox
+   Fix: Adjust MAX_PROCESSES in sandbox config
+   ```
+
+3. Security Issues
+   ```
+   Issue: Exposed API endpoints
+   Fix: Enable authentication, use API keys
+   ```
+
+   ```
+   Issue: Container escape concerns
+   Fix: Review Docker security settings
+   ```
+
+### 4. Development Workflow
+
+1. Adding New Features
+   - Define in domain layer
+   - Implement interfaces
+   - Add API endpoints
+   - Update frontend components
+
+2. Testing
+   - Unit tests per component
+   - Integration tests for APIs
+   - E2E tests for critical flows
+   - Security scans
+
+3. Deployment
+
+#### Railway Deployment
+
+1. Monorepo Configuration
+   ```bash
+   # Project structure setup
+   frontend/               # Root directory for frontend service
+   ├── package.json
+   ├── vite.config.js
+   └── src/
+   
+   backend/                # Root directory for backend service
+   ├── app/
+   └── main.py
+   
+   sandbox/                # Root directory for sandbox service
+   ├── Dockerfile
+   └── app/
+   ```
+
+2. Service Setup
+   ```bash
+   # Frontend service settings
+   ROOT_DIRECTORY=/frontend
+   VITE_BACKEND_HOST=${{Backend.RAILWAY_PUBLIC_DOMAIN}}
+   
+   # Backend service settings
+   ROOT_DIRECTORY=/backend
+   ALLOWED_ORIGINS=${{Frontend.RAILWAY_PUBLIC_DOMAIN}}
+   
+   # Sandbox service settings
+   ROOT_DIRECTORY=/sandbox
+   ```
+
+3. Build Configuration
+   ```json
+   // railway.json
+   {
+     "builder": "RAILPACK",
+     "buildCommand": "npm run build",
+     "startCommand": "npm start",
+     "rootDirectory": "./frontend",
+     "watchPatterns": [
+       "/frontend/**/*.{js,ts,vue}",
+       "/backend/**/*.py",
+       "/sandbox/**/*"
+     ]
+   }
+   ```
+
+4. Deployment States
+   - **Initializing**: Initial state when deployment starts
+   - **Building**: Creating Docker image
+   - **Deploying**: Launching container
+   - **Active**: Successfully running
+   - **Failed**: Build/deploy error
+   - **Crashed**: Runtime failure
+   - **Removed**: Deployment cleaned up
+
+5. Resource Management
+   - 10GB ephemeral storage per deployment
+   - Configurable overlap period (`RAILWAY_DEPLOYMENT_OVERLAP_SECONDS`)
+   - Graceful shutdown window (`RAILWAY_DEPLOYMENT_DRAINING_SECONDS`)
+   - Auto-scaling based on load
+
+6. Railway API Integration
+
+   ```bash
+   # GraphQL API endpoint
+   https://backboard.railway.com/graphql/v2
+   
+   # Authentication (Choose one)
+   Authorization: Bearer <API_TOKEN>     # Personal/Team token
+   Project-Access-Token: <PROJECT_TOKEN> # Project-specific token
+   
+   # Rate Limits
+   Free: 100 RPH
+   Hobby: 1000 RPH, 10 RPS
+   Pro: 10000 RPH, 50 RPS
+   ```
+
+7. Template Management
+   ```bash
+   # Deploy template
+   railway template deploy <template-name>
+   
+   # Create template
+   railway template create
+   
+   # Publish template
+   railway template publish
+   ```
+
+8. MCP Server Integration
+   ```json
+   // .vscode/mcp.json
+   {
+     "servers": {
+       "Railway": {
+         "type": "stdio",
+         "command": "npx",
+         "args": ["-y", "@railway/mcp-server"]
+       }
+     }
+   }
+   ```
+
+   Available MCP Tools:
+   - Project Management (create, list)
+   - Service Management (deploy, link)
+   - Environment Management (create, link)
+   - Configuration & Variables
+   - Monitoring & Logs
+
+9. Environment Management
+   ```bash
+   # Development environment
+   railway link --project $PROJECT_ID
+   railway environment new development
+   
+   # PR environments
+   railway environment new pr-$PR_NUMBER --copy production
+   
+   # Production deployment
+   railway up --service all
+   ``` on secure, sandboxed automation of UI interactions with robust safety controls.
 
 ## Key Components
 

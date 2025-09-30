@@ -1,0 +1,16 @@
+# Railway.toml
+[build]
+builder = "RAILPACK"
+buildCommand = "npm run build"
+startCommand = "npm start"
+watchPatterns = [
+  "/frontend/**/*.{js,ts,vue}",
+  "/backend/**/*.py",
+  "/sandbox/**/*"
+]
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

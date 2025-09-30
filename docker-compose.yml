@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=${RAILWAY_BACKEND_URL}
+      - VITE_SANDBOX_URL=${RAILWAY_SANDBOX_URL}
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URI=${RAILWAY_MONGO_URL}
+      - REDIS_URL=${RAILWAY_REDIS_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SANDBOX_URL=${RAILWAY_SANDBOX_URL}
+      - PORT=8000
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+
+  sandbox:
+    build: ./sandbox
+    ports:
+      - "8001:8001"
+      - "9222:9222"
+      - "5900:5900"
+    environment:
+      - CHROME_PORT=9222
+      - VNC_PORT=5900
+      - MAX_PROCESSES=10
+      - TIMEOUT_MINUTES=60
+      - PORT=8001
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

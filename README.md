@@ -1,4 +1,115 @@
-# Awesome
+# AI Agent Development & Deployment Project
+
+This project implements a Computer Use Agent (CUA) system that enables secure, automated computer interactions through browser or VM environments. The system consists of three main services: Frontend (Vue 3), Backend (FastAPI), and Sandbox (Docker-based automation).
+
+## Security Requirements
+
+- All automation MUST run in sandboxed environments
+- NO direct system access from automation code
+- Always use empty environment variables
+- Mandatory security checks before executing actions
+
+## Project Structure
+
+```
+.
+├── frontend/              # Vue 3 + TypeScript frontend
+├── backend/              # FastAPI backend with DDD
+└── sandbox/              # Docker-based automation
+```
+
+## Development Setup
+
+1. Install dependencies:
+
+```bash
+# Frontend
+cd frontend && npm install
+
+# Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Sandbox
+cd sandbox
+docker build -t sandbox-env .
+```
+
+2. Start services:
+
+```bash
+# Frontend
+cd frontend && npm run dev
+
+# Backend
+cd backend && python -m app.main
+
+# Sandbox
+docker run --rm -it -p 5900:5900 -p 9222:9222 sandbox-env
+```
+
+## Environment Configuration
+
+Create `.env` files for each service:
+
+```bash
+# Frontend (.env)
+VITE_API_URL=http://localhost:8000
+VITE_SANDBOX_URL=http://localhost:8001
+
+# Backend (.env)
+MONGODB_URI=mongodb://localhost:27017/ai-agent
+REDIS_URL=redis://localhost:6379
+OPENAI_API_KEY=your_key_here
+SANDBOX_URL=http://localhost:8001
+PORT=8000
+NODE_ENV=development
+LOG_LEVEL=debug
+
+# Sandbox (.env)
+CHROME_PORT=9222
+VNC_PORT=5900
+MAX_PROCESSES=10
+TIMEOUT_MINUTES=60
+DOCKER_HOST=unix:///var/run/docker.sock
+```
+
+## Production Deployment
+
+1. Set up Railway:
+
+```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
+# Login
+railway login
+
+# Link project
+railway link
+```
+
+2. Deploy services:
+
+```bash
+railway up --service frontend
+railway up --service backend
+railway up --service sandbox
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Computer Use Tool
 
